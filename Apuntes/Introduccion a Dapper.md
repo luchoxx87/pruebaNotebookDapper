@@ -9,6 +9,8 @@ Dapper **extiende** la Interfaz de _Ado.Net_ `IDbConnection`, una interfaz que d
 
 Para los siguientes ejemplos vamos a partir de que tenemos las siguientes estructuras
 
+### Nuestra clase
+
 ```csharp
 public class Persona
 {
@@ -17,12 +19,19 @@ public class Persona
     public uint Dni {get; set;}
 }
 ```
+### Nuestra Tabla y Muestra
 
 | Atributo de Tabla | Tipo de Dato |
 | :---------------: | :----------: |
 | nombre            | VARCHAR(45)  |
 | apellido          | VARCHAR(45)  |
 | dni               | INT UNSIGNED |
+
+| Nombre | Apellido | Dni      |
+| ------ | -------- | -------- |
+| Ana    | García   | 12345678 |
+| Luis   | Duran    | 87654321 |
+| Luis   | López    | 44556677 |
 
 ## Principales métodos de Dapper
 
@@ -31,6 +40,15 @@ Vamos a ver un listado de los principales métodos que agregan al comportamiento
 ### Query\<T>
 
 Es un método genérico que permite obtener una colección de objetos del tipo `T`. Puede ejecutar consultas o _Procedimientos Almacenados_ que devuelvan filas.
+
+#### Ejemplo con Consulta
+
+```csharp
+string sql = "SELECT Nombre, Apellido, Dni FROM Personas";
+IEnumerable<Persona> personas = db.Query<Persona>(sql);
+personas.ForEach(p => Console.WriteLine($"{p.Nombre} {p.Apellido} - DNI: {p.Dni}"));
+```
+
 
 ### QueryFirstOrDefault\<T>
 
