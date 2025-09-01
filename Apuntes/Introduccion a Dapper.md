@@ -44,15 +44,64 @@ Es un método genérico que permite obtener una colección de objetos del tipo `
 #### Ejemplo con Consulta
 
 ```csharp
-string sql = "SELECT Nombre, Apellido, Dni FROM Personas";
+string sql = "SELECT Nombre, Apellido, Dni FROM Persona";
 IEnumerable<Persona> personas = db.Query<Persona>(sql);
 personas.ForEach(p => Console.WriteLine($"{p.Nombre} {p.Apellido} - DNI: {p.Dni}"));
 ```
 
+Y la salida es:
 
+```shell
+Ana García - DNI: 12345678
+Luis Duran - DNI: 87654321
+Luis López - DNI: 44556677
+```
+
+### Parámetros
+
+Para las consultas que desarrollemos, va a ser común asignarle parámetros, veamos 2 formas que tiene _Dapper_ de implementarlos. Es importante tener en cuenta también que las implementaciones establecidas por _Dapper_ previenen ataques de _SQL Injection_.
+
+#### Dapper.DynamicParameters
+
+Es una clase desarrollada por _Dapper_ que sirve como una colección de parámetros para _inyectar_ en nuestra consulta parametrizada.
+
+```csharp
+DynamicParameters parametros = new DynamicParameters();
+//El primer parámetro es el nombre, el segundo su valor
+parametros.Add("unNombre", "Luis");
+
+var sql = @"SELECT * FROM Persona WHERE nombre = @unNombre";
+var personas = db.Query<Persona>(sql, parametros);
+```
+
+Como vemos en el ejemplo anterior, dentro de la cadena de nuestra consulta, en la sección del `WHERE` colocamos el parámetro `@unNombre`, el cual _Dapper_ va a inyectarle los valores que hayamos asignado en el objeto `parametros`. La salida sera:
+
+```shell
+Luis Duran - DNI: 87654321
+Luis López - DNI: 44556677
+```
+
+Veamos ahora como asignarle más de un parámetro:
+
+```csharp
+var parametros = new DynamicParameters();
+parametros.Add("unNombre", "Luis");
+parametros.Add("unApellido", "Duran");
+
+var sql = @"SELECT * FROM Persona WHERE nombre = @unNombre AND apellido = @unApellido";
+var personas = db.Query<Persona>(sql, parametros);
+```
+
+Y nuestra salida:
+
+```shell
+Luis Duran - DNI: 87654321
+```
+
+Es muy importante notar, que tiene que haber correspondencia entre el nombre del parámetro dentro de nuestra consulta (`@variable`) con el que le pasamos nosotros dentro del método `DynamicParameters.Add()`; tambien se tienen que corresponder los tipos de datos.
 ### QueryFirstOrDefault\<T>
 
-Es un método genérico que permite obtener un elemento y en caso de que devuelva nada, el valor por defecto para el tipo `T`.
+Es un método genérico que permite obtener un elemento y en caso de que devuelva nada, el valor por defecto para el tipo `T` (_null_ si es un tipo definido por nosotros).
 
 ### Execute
 
