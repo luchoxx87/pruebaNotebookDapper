@@ -13,3 +13,4 @@ Esta guía tiene el objetivo de formar a nuestros estudiantes de la **ET12** a c
 
 1. [Prefacio con ADO.NET](<Apuntes/Sobre Ado.NET.md>)
 1. [Iniciando en Dapper](<Apuntes/Iniciando en Dapper.ipynb>)
+1. [Patrón Repositorio](Apuntes/Repositorios.md)
