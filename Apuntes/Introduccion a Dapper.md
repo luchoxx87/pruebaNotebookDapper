@@ -68,7 +68,7 @@ Es una clase desarrollada por _Dapper_ que sirve como una colección de parámet
 ```csharp
 DynamicParameters parametros = new DynamicParameters();
 //El primer parámetro es el nombre, el segundo su valor
-parametros.Add("unNombre", "Luis");
+parametros.Add("@unNombre", "Luis");
 
 var sql = @"SELECT * FROM Persona WHERE nombre = @unNombre";
 var personas = db.Query<Persona>(sql, parametros);
@@ -131,5 +131,79 @@ string queryPersonaPorDNI =
     FROM    Persona
     WHERE   dni = @unDni";
 ```
+
+Y usando los objetos anónimos, podemos _inyectarle_ el parámetro de la forma:
+
+```csharp
+Persona? anaG = db.QueryFirstOrDefault<Persona>(queryPersonaPorDNI, new { unDni = 12345678 });
+```
+
+Como podemos ver en la instrucción de arriba, pudimos inyectarle el parámetro `undDni` con valor `12345678` sin necesidad de usar la clase `DynamicParameters`. Por cuestiones de legibilidad la implementación con objetos anónimos, me parece vale la pena hasta por 2 atributos, para mayores parámetros (ó donde necesiten de más configuraciones como la dirección _"output"_) seguiría usando `DynamicParameters`.
+
+Veamos otro ejemplo donde inyectamos 2 parámetros mediante objetos anónimos:
+
+```csharp
+string queryPersonaPorNombreDNI =
+    @"SELECT *
+    FROM    Persona
+    WHERE   nombre = @unNombre
+    AND     dni = @unDni";
+
+Persona? luisD = db.QueryFirstOrDefault<Persona>(queryPersonaPorNombreDNI, new { unNombre = "Luis", unDni = 87654321 });
+```
+
+## Consumiendo Stored Procedure
+
+### Cuando no devuelve filas o parámetros
+
+Para este caso vamos a usar el método `Execute` de Dapper veamos un ejemplo sencillo donde modificamos información en la BD sin la necesidad de devolver filas.
+
+```sql
+CREATE PROCEDURE cambiaNombre (unDni INT, nuevoNombre VARCHAR(45))
+BEGIN
+    UPDATE  Persona
+    SET     nombre = nombreNuevo
+    WHERE   dni = unDni;
+END
+```
+
+```csharp
+int cantFilas = db.Execute("cambiaNombre", new { unDni = 87654321, unNombre = "Lucho" }, );
+if (cantFilas == 0)
+    throw new InvalidOperation ("No se encontró a nadie con ese DNI");
+```
+
+En el código usamos la devolución del método para comprender cuantas filas se modificaron con la ejecución del SP `cambiaNombre`.
+
+### Cuando nuestro SP cambia parámetros
+
+También puede ser común invocar a nuestros SP pasándole parámetros con dirección `OUT/INOUT`, para este caso podemos configurar esto mediante `DynamicParameters`.
+
+```sql
+CREATE PROCEDURE cambiaNombre2 (unDni INT, nuevoNombre VARCHAR(45), OUT momento DATETIME)
+BEGIN
+    UPDATE  Persona
+    SET     nombre = nombreNuevo
+    WHERE   dni = unDni;
+
+    SET momento = NOW();
+END
+```
+
+Vemos en el script anterior que asignamos al tercer parámetro (`momento`) el valor de fecha y hora de cuando se ejecuta el script, veamos como lo consultamos desde C#.
+
+```csharp
+DynamicParameters parametros = new DynamicParameters();
+parametros.Add("@unDni", 87654321);
+parametros.Add("@nuevoNombre", "luchoxx87");
+parametros.Add("@momento", direction: ParameterDirection.Output);
+
+db.Execute("cambiaNombre2", parametros );
+
+//Obtengo el valor de parametro de tipo salida
+DateTime momentoOut = parametros.Get<DateTime>("@unIdProducto");
+```
+
+Bien, podemos ver que el tercer `Add()` modifica la _dirección_ del parametro (`direction`)
 
 [Volver al indice](../README.md)
